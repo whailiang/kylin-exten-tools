@@ -91,6 +91,11 @@ void Widget::on_pushButton_3_clicked()
     process->start(shell);
     process->waitForFinished(-1);
 
+    /*去掉control文件中的空行*/
+    shell.clear();
+    shell = "cat /tmp/kre/DEBIAN/control | sed -e '/^$/d' > /tmp/kre/DEBIAN/control";
+    system(shell.toStdString().c_str());
+
     shell.clear();
     shell = "dpkg-deb -b /tmp/kre/ /tmp/kre-deb/"+ filename;
     if (system(shell.toStdString().c_str())  < 0) {
