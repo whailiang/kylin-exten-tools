@@ -71,10 +71,16 @@ void Widget::on_pushButton_2_clicked()
         msgBox.exec();
         return ;
     }
+    QFile writeFile("/tmp/kre/DEBIAN/control");
+    if (!writeFile.open(QIODevice::ReadWrite || QIODevice::Append)) {
+        qDebug() << "contorl file open failed!";
+    }
+
+
+
 
     QString shell  = QString("echo '%1: %2' >> /tmp/kre/DEBIAN/control").arg(ui->lineEdit_2->text()).arg(ui->lineEdit_3->text());
     system(shell.toStdString().c_str());
-
     QFile readfile("/tmp/kre/DEBIAN/control");
     if (!readfile.open(QFileDevice::ReadOnly)) {
         qDebug() << "contorl file open failed!";
@@ -93,8 +99,10 @@ void Widget::on_pushButton_3_clicked()
 
     /*去掉control文件中的空行*/
     shell.clear();
-    shell = "cat /tmp/kre/DEBIAN/control | sed -e '/^$/d' > /tmp/kre/DEBIAN/control";
+    shell = "cat /tmp/kre/DEBIAN/control | sed -e '/^$/d' > /tmp/control";
     system(shell.toStdString().c_str());
+
+    system("mv /tmp/control /tmp/kre/DEBIAN/control");
 
     shell.clear();
     shell = "dpkg-deb -b /tmp/kre/ /tmp/kre-deb/"+ filename;
@@ -103,5 +111,4 @@ void Widget::on_pushButton_3_clicked()
     } else {
         ui->label_4->setText(tr("重新打包成功，重新打包后的文件在/tmp/kre-deb中"));
     }
-
 }
