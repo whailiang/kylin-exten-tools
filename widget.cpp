@@ -71,19 +71,44 @@ void Widget::on_pushButton_2_clicked()
         msgBox.exec();
         return ;
     }
-    QFile writeFile("/tmp/kre/DEBIAN/control");
-    if (!writeFile.open(QIODevice::ReadWrite || QIODevice::Append)) {
-        qDebug() << "contorl file open failed!";
+    QFile readfile("/tmp/kre/DEBIAN/control");
+    if (!readfile.open(QIODevice::ReadOnly)) {
+        qDebug() << "contorl read file open failed!";
+    }
+    QString text;
+    QTextStream in(&readfile);
+    QString str = in.readLine();
+    while (!str.isNull()) {
+        if (str.compare(""))
+            text = text + str + "\n";
+        str = in.readLine();
+    }
+    readfile.close();
+    if (text.contains("XSBC-KyRuntimeEnv") && !ui->lineEdit_2->text().compare("XSBC-KyRuntimeEnv")) {
+        QMessageBox msgBox;
+        msgBox.setWindowTitle(QObject::tr("麒麟软件包扩展属性工具"));
+        msgBox.setIcon(QMessageBox::Critical);
+        msgBox.setText(QObject::tr("扩展属性已经存在"));
+        QPushButton *btn = new QPushButton();
+        btn->setText(QObject::tr("确定"));
+        msgBox.addButton(btn, QMessageBox::AcceptRole);
+        msgBox.exec();
+        return ;
     }
 
+    QFile writeFile("/tmp/kre/DEBIAN/control");
+    if (!writeFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        qDebug() << "contorl write file open failed!";
+    }
+    QTextStream out(&writeFile);
+    out << text;
+    out << ui->lineEdit_2->text()  << ": " << ui->lineEdit_3->text() << "\n";
+    writeFile.flush();
+    writeFile.close();
 
 
-
-    QString shell  = QString("echo '%1: %2' >> /tmp/kre/DEBIAN/control").arg(ui->lineEdit_2->text()).arg(ui->lineEdit_3->text());
-    system(shell.toStdString().c_str());
-    QFile readfile("/tmp/kre/DEBIAN/control");
     if (!readfile.open(QFileDevice::ReadOnly)) {
-        qDebug() << "contorl file open failed!";
+        qDebug() << "contorl read file open failed!";
         exit(0);
     }
     ui->textEdit->setText(QString(readfile.readAll()));
@@ -97,18 +122,14 @@ void Widget::on_pushButton_3_clicked()
     process->start(shell);
     process->waitForFinished(-1);
 
-    /*去掉control文件中的空行*/
-    shell.clear();
-    shell = "cat /tmp/kre/DEBIAN/control | sed -e '/^$/d' > /tmp/control";
-    system(shell.toStdString().c_str());
 
-    system("mv /tmp/control /tmp/kre/DEBIAN/control");
+    QString username = QString::fromLatin1(getenv("SUDO_USER"));
 
     shell.clear();
-    shell = "dpkg-deb -b /tmp/kre/ /tmp/kre-deb/"+ filename;
+    shell = "dpkg-deb -b /tmp/kre/ /home/" + username + "/" + filename;
     if (system(shell.toStdString().c_str())  < 0) {
         ui->label_4->setText(tr("重新打包失败!"));
     } else {
-        ui->label_4->setText(tr("重新打包成功，重新打包后的文件在/tmp/kre-deb中"));
+        ui->label_4->setText(tr("重新打包成功，重新打包后的文件在/home/%1中").arg(username));
     }
 }
